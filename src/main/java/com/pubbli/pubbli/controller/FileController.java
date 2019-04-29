@@ -1,6 +1,9 @@
 package com.pubbli.pubbli.controller;
 
 import com.pubbli.pubbli.payload.UploadFileResponse;
+import com.pubbli.pubbli.repository.FotoRepository;
+import com.pubbli.pubbli.repository.TuttifileRepository;
+import com.pubbli.pubbli.repository.VideoRepository;
 import com.pubbli.pubbli.services.FileStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +30,20 @@ public class FileController {
     @Autowired
     private FileStorageService fileStorageService;
 
-    @PostMapping("/uploadFile")
+    @Autowired
+    private FotoRepository fotoRepository;
+
+    @Autowired
+    private VideoRepository videoRepository;
+
+    @Autowired
+    private TuttifileRepository tuttifileRepository;
+
+    @PostMapping("/uploadFile") //FOTO
     public UploadFileResponse uploadFile(@RequestParam("file") MultipartFile file) {
         String fileName = fileStorageService.storeFile(file);
+
+
 
         String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/downloadFile/")
@@ -40,6 +54,21 @@ public class FileController {
                 file.getContentType(), file.getSize());
     }
 
+    @PostMapping("/uploadVideo") //Video
+    public UploadFileResponse uploadVideo(@RequestParam("file") MultipartFile file) {
+        String fileName = fileStorageService.storeVideo(file);
+
+        String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/downloadFile/")
+                .path(fileName)
+                .toUriString();
+
+        return new UploadFileResponse(fileName, fileDownloadUri,
+                file.getContentType(), file.getSize());
+    }
+
+
+
     @PostMapping("/uploadMultipleFiles")
     public List<UploadFileResponse> uploadMultipleFiles(@RequestParam("files") MultipartFile[] files) {
         return Arrays.asList(files)
@@ -47,6 +76,8 @@ public class FileController {
                 .map(file -> uploadFile(file))
                 .collect(Collectors.toList());
     }
+
+
 
     @GetMapping("/downloadFile/{fileName:.+}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName, HttpServletRequest request) {
@@ -72,6 +103,30 @@ public class FileController {
                 .body(resource);
     }
 
+
+    @GetMapping("/downloadFileDaTuttiFile/{fileName:.+}")
+    public ResponseEntity<Resource> downloadDaTuttiFile(@PathVariable String fileName, HttpServletRequest request) {
+        // Load file as Resource
+        Resource resource = fileStorageService.loadFileAsResourceDaTuttiFile(fileName);
+
+        // Try to determine file's content type
+        String contentType = null;
+        try {
+            contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+        } catch (IOException ex) {
+            logger.info("Could not determine file type.");
+        }
+
+        // Fallback to the default content type if type could not be determined
+        if(contentType == null) {
+            contentType = "application/octet-stream";
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+    }
 
     @GetMapping("/getallfoto")
     public List<String> getAllPhoto(){

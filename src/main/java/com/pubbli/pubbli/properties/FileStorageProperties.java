@@ -10,6 +10,16 @@ public class FileStorageProperties {
 
     private String uploadDirVideo;
 
+    private String tuttifile;
+
+    public String getTuttifile() {
+        return tuttifile;
+    }
+
+    public void setTuttifile(String tuttifile) {
+        this.tuttifile = tuttifile;
+    }
+
     public String getUploadDir() {
         return uploadDir;
     }

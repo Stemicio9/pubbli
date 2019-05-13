@@ -5,6 +5,7 @@ import com.pubbli.pubbli.exceptions.FileStorageException;
 import com.pubbli.pubbli.exceptions.MyFileNotFoundException;
 import com.pubbli.pubbli.model.Foto;
 import com.pubbli.pubbli.model.Tuttifile;
+import com.pubbli.pubbli.model.Video;
 import com.pubbli.pubbli.properties.FileStorageProperties;
 import com.pubbli.pubbli.repository.FotoRepository;
 import com.pubbli.pubbli.repository.TuttifileRepository;
@@ -39,6 +40,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static io.humble.video.awt.MediaPictureConverterFactory.convertToType;
 import static org.bytedeco.javacpp.opencv_imgcodecs.cvLoadImage;
@@ -125,9 +127,12 @@ public class FileStorageService {
             Foto f=new Foto();
             f.setUrlFoto(pathtotale);
             fotoRepository.save(f);
+            System.out.println("FOTO = "+f.getIdFoto());
+            long id=f.getIdFoto();
 
-            trasformaFotoInVideoNuovo(file);
-
+            CompletableFuture.runAsync(()-> {
+                        trasformaFotoInVideoNuovo(file,id);
+                    });
             //TrasformaFotoinVideo
             //SalvainTUTTIFILE
 
@@ -230,7 +235,7 @@ public class FileStorageService {
 
     }
 
-    public void trasformaFotoInVideoNuovo(MultipartFile file){
+    public void trasformaFotoInVideoNuovo(MultipartFile file,long id){
         ArrayList<String> links = new ArrayList<>();
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
         String name= getFileNameWithoutExtension(fileName);
@@ -254,6 +259,7 @@ public class FileStorageService {
         convertJPGtoMovie(links,nuovonome);
 
         Tuttifile tf=new Tuttifile();
+        tf.setIdTuttifile(id);
         tf.setUrlTuttifile(nuovonome);
         tuttifileRepository.save(tf);
 
@@ -297,6 +303,11 @@ public class FileStorageService {
         }
     }
 
+    public String getflepath(String nomefile){
+        Path targetLocation = this.tuttifileStorageLocation.resolve(nomefile);
+        return targetLocation.toAbsolutePath().toString();
+    }
+
     public String storeVideo(MultipartFile file) {
         // Normalize file name
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
@@ -310,6 +321,21 @@ public class FileStorageService {
             // Copy file to the target location (Replacing existing file with the same name)
             Path targetLocation = this.videoStorageLocation.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            Path targetLocation1 = this.tuttifileStorageLocation.resolve(fileName);
+            Files.copy(file.getInputStream(), targetLocation1, StandardCopyOption.REPLACE_EXISTING);
+            String pathtotale=targetLocation.toString();
+
+            Video v = new Video();
+            v.setUrlVideo(pathtotale);
+            videoRepository.save(v);
+
+            String nuovonome = this.tuttifileStorageLocation.toAbsolutePath().toString()+"\\"+fileName;
+
+            Tuttifile tf=new Tuttifile();
+            tf.setUrlTuttifile(nuovonome);
+            tf.setIdTuttifile(v.getIdVideo());
+            tuttifileRepository.save(tf);
+
 
             return fileName;
         } catch (IOException ex) {
@@ -339,7 +365,7 @@ public class FileStorageService {
 
     public Resource loadFileAsResource(String fileName) {
         try {
-            Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
+            Path filePath = this.fotoStorageLocation.resolve(fileName).normalize();
 
             Resource resource = new UrlResource(filePath.toUri());
             if(resource.exists()) {
@@ -368,16 +394,31 @@ public class FileStorageService {
     }
 
 
-    public List<String> getAllPhoto(){
-        List<String> result = new LinkedList<>();
+    public List<Tuttifile> getAllPhoto(){
+        List<Tuttifile> result = new LinkedList<>();
         try{
 
-            File folder = fileStorageLocation.toFile();
+            File folder = fotoStorageLocation.toFile();
             File[] listOfFiles = folder.listFiles();
 
+
             for (int i = 0; i < listOfFiles.length; i++) {
+
+
+
                 if (listOfFiles[i].isFile()) {
-                    result.add(listOfFiles[i].getName());
+
+                    Path path = this.tuttifileStorageLocation.resolve(listOfFiles[i].getName());
+
+                    String url= path.toString();
+
+                    Tuttifile tf=new Tuttifile();
+
+                    tf.setUrlTuttifile(listOfFiles[i].getName());
+
+                    tf.setIdTuttifile(getIdFromUrl(url));
+
+                    result.add(tf);
                 } else if (listOfFiles[i].isDirectory()) {
                     System.out.println("Directory " + listOfFiles[i].getName());
                 }
@@ -390,6 +431,53 @@ public class FileStorageService {
             return null;
         }
     }
+
+    public long getIdFromUrl(String url){
+        try {
+            System.out.println(url);
+            Tuttifile tf = tuttifileRepository.findByUrlTuttifile(url);
+            return tf.getIdTuttifile();
+        }catch (Exception e){
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+
+    public List<Tuttifile> getAllVideo(){
+        List<Tuttifile> result = new LinkedList<>();
+        try{
+
+            File folder = videoStorageLocation.toFile();
+            File[] listOfFiles = folder.listFiles();
+
+            for (int i = 0; i < listOfFiles.length; i++) {
+                if (listOfFiles[i].isFile()) {
+                    Path path = this.tuttifileStorageLocation.resolve(listOfFiles[i].getName());
+
+                    String url= path.toString();
+
+                    Tuttifile tf=new Tuttifile();
+
+                    tf.setUrlTuttifile(listOfFiles[i].getName());
+
+                    tf.setIdTuttifile(getIdFromUrl(url));
+
+                    result.add(tf);
+                } else if (listOfFiles[i].isDirectory()) {
+                    System.out.println("Directory " + listOfFiles[i].getName());
+                }
+            }
+
+
+            return result;
+        }catch(Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
 
 
 

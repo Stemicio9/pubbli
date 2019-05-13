@@ -1,20 +1,18 @@
 package com.pubbli.pubbli.model;
 
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 @Entity
 public class Video {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="VIDEO_FOTO")
+    @SequenceGenerator(name="VIDEO_FOTO", sequenceName="video_foto")
     private long idVideo;
 
-    private String urlVideo;
+    @Column(unique = true)
+    private  String urlVideo;
 
     public long getIdVideo() {
         return idVideo;

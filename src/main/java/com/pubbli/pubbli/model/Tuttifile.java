@@ -9,7 +9,7 @@ import javax.persistence.Id;
 public class Tuttifile {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     private long idTuttifile;
 
     private String urlTuttifile;

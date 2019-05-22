@@ -1,5 +1,9 @@
 package com.pubbli.pubbli.dto;
 
+import com.pubbli.pubbli.model.Gruppo;
+
+import java.util.List;
+
 public class Nomedispositivoposizione {
 
 
@@ -10,6 +14,8 @@ public class Nomedispositivoposizione {
     private double longitudine;
 
     private long idAndroid;
+
+   // private List<Gruppo> list;
 
     public double getLatitudine() {
         return latitudine;
@@ -27,6 +33,13 @@ public class Nomedispositivoposizione {
         return idAndroid;
     }
 
+  /*  public List<Gruppo> getList() {
+        return list;
+    }
+
+    public void setList(List<Gruppo> list) {
+        this.list = list;
+    }*/
 
     public void setLatitudine(double latitudine) {
         this.latitudine = latitudine;

@@ -1,13 +1,16 @@
 package com.pubbli.pubbli.services;
 
 
+import com.pubbli.pubbli.controller.MediaController;
 import com.pubbli.pubbli.exceptions.FileStorageException;
 import com.pubbli.pubbli.exceptions.MyFileNotFoundException;
 import com.pubbli.pubbli.model.Foto;
+import com.pubbli.pubbli.model.Media;
 import com.pubbli.pubbli.model.Tuttifile;
 import com.pubbli.pubbli.model.Video;
 import com.pubbli.pubbli.properties.FileStorageProperties;
 import com.pubbli.pubbli.repository.FotoRepository;
+import com.pubbli.pubbli.repository.MediaRepository;
 import com.pubbli.pubbli.repository.TuttifileRepository;
 import com.pubbli.pubbli.repository.VideoRepository;
 import io.humble.video.*;
@@ -130,11 +133,12 @@ public class FileStorageService {
             System.out.println("FOTO = "+f.getIdFoto());
             long id=f.getIdFoto();
 
+            //TrasformaFotoinVideo
+            //SalvainTUTTIFILE
+
             CompletableFuture.runAsync(()-> {
                         trasformaFotoInVideoNuovo(file,id);
                     });
-            //TrasformaFotoinVideo
-            //SalvainTUTTIFILE
 
             return fileName;
         } catch (IOException ex) {
@@ -142,105 +146,10 @@ public class FileStorageService {
         }
     }
 
-
-    public void trasformafotoinvideo(MultipartFile file ){
-
-        String nuovonome=this.tuttifileStorageLocation.toString()+StringUtils.cleanPath(file.getOriginalFilename());;
-
-
-
-
-        final Muxer muxer= Muxer.make(nuovonome,null,null);
-
-        final MuxerFormat format = muxer.getFormat();
-
-
-
-        System.out.println("FORMAT = "+format);
-
-        final Codec codec = Codec.findEncodingCodec(format.getDefaultVideoCodecId());
-
-        final Rational framerate= Rational.make(1,1);
-
-        final double duration=15;
-
-
-
-        Encoder encoder = Encoder.make(codec);
-
-        encoder.setWidth(200);
-        encoder.setHeight(150);
-        // We are going to use 420P as the format because that's what most video formats these days use
-        final PixelFormat.Type pixelformat = PixelFormat.Type.PIX_FMT_YUV420P;
-        encoder.setPixelFormat(pixelformat);
-        encoder.setTimeBase(framerate);
-
-        try {
-
-            /** Open the encoder. */
-            encoder.open(null, null);
-
-
-            /** Add this stream to the muxer. */
-            muxer.addNewStream(encoder);
-
-            /** And open the muxer for business. */
-            muxer.open(null, null);
-
-            MediaPictureConverter converter = null;
-            final MediaPicture picture = MediaPicture.make(
-                    encoder.getWidth(),
-                    encoder.getHeight(),
-                    pixelformat);
-            picture.setTimeBase(framerate);
-
-            final MediaPacket packet = MediaPacket.make();
-
-            for (int i = 0; i < duration / framerate.getDouble(); i++) {
-                /** Make the screen capture && convert image to TYPE_3BYTE_BGR */
-                InputStream in = new ByteArrayInputStream(file.getBytes());
-                BufferedImage immaine = ImageIO.read(in);
-
-                final BufferedImage screen = convertToType(immaine, BufferedImage.TYPE_3BYTE_BGR);
-
-                /** This is LIKELY not in YUV420P format, so we're going to convert it using some handy utilities. */
-                if (converter == null)
-                    converter = MediaPictureConverterFactory.createConverter(screen, picture);
-                converter.toPicture(picture, screen, i);
-
-                do {
-                    encoder.encode(packet, picture);
-                    if (packet.isComplete())
-                        muxer.write(packet, false);
-                } while (packet.isComplete());
-
-                /** now we'll sleep until it's time to take the next snapshot. */
-                Thread.sleep((long) (1000 * framerate.getDouble()));
-            }
-
-            do {
-                encoder.encode(packet, null);
-                if (packet.isComplete())
-                    muxer.write(packet,  false);
-            } while (packet.isComplete());
-
-            /** Finally, let's clean up after ourselves. */
-            muxer.close();
-
-
-
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-
-    }
-
     public void trasformaFotoInVideoNuovo(MultipartFile file,long id){
         ArrayList<String> links = new ArrayList<>();
         String fileName = StringUtils.cleanPath(file.getOriginalFilename());
         String name= getFileNameWithoutExtension(fileName);
-
-
 
         Path targetLocation = this.fotoStorageLocation.resolve(fileName);
         String pathtotale = targetLocation.toAbsolutePath().toString() ;
@@ -248,11 +157,7 @@ public class FileStorageService {
         System.out.println("PATH TOTALE" + pathtotale);
         links.add(pathtotale);
 
-
-
         String nuovonome = this.tuttifileStorageLocation.toAbsolutePath().toString() +"\\"+ name+".mp4" ;
-
-
 
         System.out.println("NUOVO NOME" + nuovonome);
 
@@ -287,12 +192,12 @@ public class FileStorageService {
         OpenCVFrameConverter.ToIplImage grabberConverter = new OpenCVFrameConverter.ToIplImage();
         FFmpegFrameRecorder recorder = new FFmpegFrameRecorder(vidPath,640,720);
         try {
-            recorder.setFrameRate(1);
+            recorder.setFrameRate(24);
             recorder.setVideoCodec(avcodec.AV_CODEC_ID_MPEG4);
             recorder.setFormat("mp4");
             recorder.setVideoQuality(0); // maximum quality
             recorder.start();
-            for (int i=0;i<15;i++)
+            for (int i=0;i<360;i++)
             {
                 recorder.record(grabberConverter.convert(cvLoadImage(links.get(0))));
             }
@@ -393,9 +298,11 @@ public class FileStorageService {
         }
     }
 
+    @Autowired
+    MediaController mediaController;
 
-    public List<Tuttifile> getAllPhoto(){
-        List<Tuttifile> result = new LinkedList<>();
+    public List<Foto> getAllPhoto(){
+        List<Foto> result = new LinkedList<>();
         try{
 
             File folder = fotoStorageLocation.toFile();
@@ -406,7 +313,62 @@ public class FileStorageService {
 
 
 
-                if (listOfFiles[i].isFile()) {
+                if (listOfFiles[i].isFile() ) {
+
+                    Path path = this.fotoStorageLocation.resolve(listOfFiles[i].getName());
+
+                    String url= path.toString();
+
+                    Foto f=new Foto();
+
+                    f.setUrlFoto(listOfFiles[i].getName());
+
+                    f.setIdFoto(getIdFromUrlFoto(url));
+
+                    result.add(f);
+                } else if (listOfFiles[i].isDirectory()) {
+                    System.out.println("Directory " + listOfFiles[i].getName());
+                }
+            }
+
+
+            return result;
+        }catch(Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+
+    public long getIdFromUrlFoto(String url){
+        try {
+            System.out.println(url);
+            Foto f = fotoRepository.findByUrlFoto(url);
+            return f.getIdFoto();
+        }catch (Exception e){
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+
+
+
+    public List<Tuttifile> getAllPhotoinVideo(){
+        List<Tuttifile> result = new LinkedList<>();
+        try{
+
+            File folder = tuttifileStorageLocation.toFile();
+            File[] listOfFiles = folder.listFiles();
+
+
+            for (int i = 0; i < listOfFiles.length; i++) {
+
+               String p= this.tuttifileStorageLocation.toAbsolutePath().toString() + "\\" + listOfFiles[i].getName();
+              // System.out.println("P = "+p);
+
+                if (listOfFiles[i].isFile() && mediaController.isFotoVideo(this.tuttifileRepository.findByUrlTuttifile(p).getIdTuttifile())) {
 
                     Path path = this.tuttifileStorageLocation.resolve(listOfFiles[i].getName());
 
@@ -415,6 +377,7 @@ public class FileStorageService {
                     Tuttifile tf=new Tuttifile();
 
                     tf.setUrlTuttifile(listOfFiles[i].getName());
+
 
                     tf.setIdTuttifile(getIdFromUrl(url));
 
@@ -477,8 +440,97 @@ public class FileStorageService {
         }
     }
 
-
-
-
-
 }
+
+
+/* public void trasformafotoinvideo(MultipartFile file ){
+
+        String nuovonome=this.tuttifileStorageLocation.toString()+StringUtils.cleanPath(file.getOriginalFilename());;
+
+
+
+
+        final Muxer muxer= Muxer.make(nuovonome,null,null);
+
+        final MuxerFormat format = muxer.getFormat();
+
+
+
+        System.out.println("FORMAT = "+format);
+
+        final Codec codec = Codec.findEncodingCodec(format.getDefaultVideoCodecId());
+
+        final Rational framerate= Rational.make(1,1);
+
+        final double duration=15;
+
+
+
+        Encoder encoder = Encoder.make(codec);
+
+        encoder.setWidth(200);
+        encoder.setHeight(150);
+        // We are going to use 420P as the format because that's what most video formats these days use
+        final PixelFormat.Type pixelformat = PixelFormat.Type.PIX_FMT_YUV420P;
+        encoder.setPixelFormat(pixelformat);
+        encoder.setTimeBase(framerate);
+
+        try {
+
+            /** Open the encoder.
+            encoder.open(null, null);
+
+
+        /** Add this stream to the muxer.
+        muxer.addNewStream(encoder);
+
+        /** And open the muxer for business.
+        muxer.open(null, null);
+
+        MediaPictureConverter converter = null;
+        final MediaPicture picture = MediaPicture.make(
+        encoder.getWidth(),
+        encoder.getHeight(),
+        pixelformat);
+        picture.setTimeBase(framerate);
+
+        final MediaPacket packet = MediaPacket.make();
+
+        for (int i = 0; i < duration / framerate.getDouble(); i++) {
+        /** Make the screen capture && convert image to TYPE_3BYTE_BGR
+        InputStream in = new ByteArrayInputStream(file.getBytes());
+        BufferedImage immaine = ImageIO.read(in);
+
+        final BufferedImage screen = convertToType(immaine, BufferedImage.TYPE_3BYTE_BGR);
+
+        /** This is LIKELY not in YUV420P format, so we're going to convert it using some handy utilities.
+        if (converter == null)
+        converter = MediaPictureConverterFactory.createConverter(screen, picture);
+        converter.toPicture(picture, screen, i);
+
+        do {
+        encoder.encode(packet, picture);
+        if (packet.isComplete())
+        muxer.write(packet, false);
+        } while (packet.isComplete());
+
+        /** now we'll sleep until it's time to take the next snapshot.
+        Thread.sleep((long) (1000 * framerate.getDouble()));
+        }
+
+        do {
+        encoder.encode(packet, null);
+        if (packet.isComplete())
+        muxer.write(packet,  false);
+        } while (packet.isComplete());
+
+        /** Finally, let's clean up after ourselves.
+        muxer.close();
+
+
+
+        }catch(Exception e){
+        e.printStackTrace();
+        }
+
+        } */

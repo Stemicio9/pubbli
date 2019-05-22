@@ -39,7 +39,4 @@ public class SequenzaController {
         sequenzaRepository.delete(sequenza);
     }
 
-
-
-
 }

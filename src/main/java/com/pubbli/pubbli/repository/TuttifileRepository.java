@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 public interface TuttifileRepository extends JpaRepository<Tuttifile, Long > {
 
     Tuttifile findByUrlTuttifile(String url);
+    Tuttifile findByIdTuttifile(Long id);
 }

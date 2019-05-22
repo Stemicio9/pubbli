@@ -1,6 +1,7 @@
 package com.pubbli.pubbli.controller;
 
 import com.pubbli.pubbli.dto.Grupposequenza;
+
 import com.pubbli.pubbli.dto.Nomedispositivoposizione;
 import com.pubbli.pubbli.model.Dispositivo;
 import com.pubbli.pubbli.model.Gruppo;
@@ -9,13 +10,12 @@ import com.pubbli.pubbli.repository.DispositivoRepository;
 import com.pubbli.pubbli.repository.GruppoRepository;
 import com.pubbli.pubbli.repository.SequenzaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.transaction.Transactional;
 import java.util.List;
 @RestController
+@CrossOrigin
 public class GruppoController {
 
     @GetMapping("/allgruppi")
@@ -23,6 +23,7 @@ public class GruppoController {
 
         return gruppoRepository.findAll();
     }
+
 
     @PostMapping("/creagruppi")
     public void creagruppi(@RequestBody Gruppo gruppo){
@@ -54,8 +55,10 @@ public class GruppoController {
     public void assegnasequenzaagruppo(@RequestBody Grupposequenza grupposequenza){
 
         Gruppo gruppocorrente= gruppoRepository.findByIdGruppo(grupposequenza.getIdgruppo());
+        System.out.println("IDGRUPPOMANDATO ="+grupposequenza.getIdgruppo());
+        System.out.println("GRUPPOCORRENTE ="+gruppocorrente);
 
-        Sequenza sequenzacorrente = sequenzaRepository.findById(grupposequenza.getIdsequenza()).get();
+        Sequenza sequenzacorrente = sequenzaRepository.findByIdSequenza(grupposequenza.getIdsequenza());
 
         gruppocorrente.setIdGruppoSequenza(sequenzacorrente);
 
@@ -75,6 +78,8 @@ public class GruppoController {
         gruppoRepository.save(gruppocorrente);
 
     }
+
+
 
 
 }

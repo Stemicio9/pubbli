@@ -1,5 +1,7 @@
 package com.pubbli.pubbli.controller;
 
+import com.pubbli.pubbli.model.Foto;
+import com.pubbli.pubbli.model.Tuttifile;
 import com.pubbli.pubbli.payload.UploadFileResponse;
 import com.pubbli.pubbli.repository.FotoRepository;
 import com.pubbli.pubbli.repository.TuttifileRepository;
@@ -236,9 +238,15 @@ public class FileController {
     }
 
     @GetMapping("/getallfoto")
-    public List<Tuttifile> getAllPhoto(){
+    public List<Foto> getAllPhoto(){
         return fileStorageService.getAllPhoto();
     }
+
+    @GetMapping("/getallfotoinvideo")
+    public List<Tuttifile> getAllPhotoinVideo(){
+        return fileStorageService.getAllPhotoinVideo();
+    }
+
 
     @GetMapping("/getallvideo")
     public List<Tuttifile> getAllVideo(){

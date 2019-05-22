@@ -13,6 +13,10 @@ public class Sequenza {
 
     private String nomeSequenza;
 
+    //CREARE QUEERY CHE ASSEGNA LA SEQUENZA
+
+
+
 
     public long getIdSequenza() {
         return idSequenza;
@@ -21,6 +25,9 @@ public class Sequenza {
     public String getNomeSequenza() {
         return nomeSequenza;
     }
+
+
+
 
 
     public void setIdSequenza(long idSequenza) {

@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface FotoRepository extends JpaRepository<Foto, Long > {
+
+    Foto findByUrlFoto (String url);
 }

@@ -57,21 +57,30 @@ public class MediaController {
     @PostMapping("/isfotovideo")
     public boolean isFotoVideo(@RequestBody long idFotoVideo){
 
+        //System.out.println("ID = "+idFotoVideo);
         List<Foto> lf=fotoRepository.findAll();
         List<Video> lv=videoRepository.findAll();
 
-        for (Foto f: lf){
 
-            if(idFotoVideo == f.getIdFoto()) return true;
+
+        for (Foto f : lf) {
+
+             if (idFotoVideo == f.getIdFoto()) return true;
+            System.out.println("ID = "+idFotoVideo);
         }
 
-        for(Video v: lv){
+        for (Video v : lv) {
 
-            if(idFotoVideo == v.getIdVideo()) return true;
+             if (idFotoVideo == v.getIdVideo()) return false;
         }
 
         return false;
-    }
+
+     }
+
+
+
+
 
 
     @PostMapping("/isfoto")

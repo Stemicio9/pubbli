@@ -2,6 +2,7 @@ package com.pubbli.pubbli.model;
 
 
 import javax.persistence.*;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -20,10 +21,11 @@ public class Gruppo {
             joinColumns =  @JoinColumn(name ="idGruppo"),inverseJoinColumns= @JoinColumn(name="idSequenza"))
     public Sequenza idGruppoSequenza;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "gruppodisposivo",
-            joinColumns =  @JoinColumn(name ="idGruppo"),inverseJoinColumns= @JoinColumn(name="idDispositivo"))
-    public Set<Dispositivo> dispositivi;
+            joinColumns =  @JoinColumn(name ="idGruppo" ),inverseJoinColumns= @JoinColumn(name="idDispositivo " ))
+
+    public Set<Dispositivo> gdispositivi;
 
 
 
@@ -52,10 +54,10 @@ public class Gruppo {
     }
 
     public Set<Dispositivo> getDispositivi() {
-        return dispositivi;
+        return gdispositivi;
     }
 
-    public void setDispositivi(Set<Dispositivo> dispositivi) {
-        this.dispositivi = dispositivi;
+    public void setDispositivi(Set<Dispositivo> gdispositivi) {
+        this.gdispositivi = gdispositivi;
     }
 }

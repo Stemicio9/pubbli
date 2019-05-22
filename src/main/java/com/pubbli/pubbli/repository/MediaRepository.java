@@ -11,4 +11,5 @@ public interface MediaRepository extends JpaRepository<Media,Long > {
     List<Media> findAllByIdSequenza(long id);
 
     void deleteAllByIdSequenza(long id);
+
 }
